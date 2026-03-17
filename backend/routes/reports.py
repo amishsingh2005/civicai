@@ -103,3 +103,24 @@ async def create_report(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+@router.get("/feed")
+async def get_feed(status: str = None, issue_type: str = None):
+    try:
+        query = {}
+        if status:
+            query["status"] = status
+        if issue_type:
+            query["issue_type"] = issue_type
+            
+        cursor = reports_collection.find(query).sort("created_at", -1)
+        reports = []
+        async for doc in cursor:
+            doc["_id"] = str(doc["_id"])
+            reports.append(doc)
+            
+        return reports
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
