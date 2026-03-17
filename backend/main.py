@@ -32,6 +32,7 @@ async def startup_event():
 # Register routes
 app.include_router(auth.router)
 app.include_router(reports.router)
+app.include_router(comments.router)
 
 @app.get("/")
 async def root():

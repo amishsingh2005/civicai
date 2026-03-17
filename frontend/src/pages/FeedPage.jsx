@@ -76,7 +76,7 @@ export default function FeedPage() {
         coordinates: [report.location.coordinates[1], report.location.coordinates[0]],
         description: report.description,
         image: report.image_url.startsWith('http') ? report.image_url : `${BACKEND_URL}${report.image_url}`,
-        upvotes: report.report_count * 10, // Simulate upvotes based on report count
+        upvotes: report.score || 0,
         downvotes: 0,
         userVote: null
       }));
@@ -94,57 +94,28 @@ export default function FeedPage() {
     fetchPosts();
   }, []);
 
-  const handleVote = (postId, voteType) => {
+  const handleVote = async (postId, voteType) => {
     if (!user) {
       alert("Please Sign In to vote on issues!");
       navigate('/auth');
       return;
     }
 
-    setPosts(prevPosts => {
-      const updated = prevPosts.map(post => {
-        if (post.id === postId) {
-          let newUpvotes = post.upvotes;
-          let newDownvotes = post.downvotes;
-          let newUserVote = post.userVote;
-
-          if (post.userVote === voteType) {
-            newUserVote = null;
-            if (voteType === 'up') newUpvotes--;
-            if (voteType === 'down') newDownvotes--;
-          } 
-          else if (post.userVote && post.userVote !== voteType) {
-            newUserVote = voteType;
-            if (voteType === 'up') {
-              newUpvotes++;
-              newDownvotes--;
-            } else {
-              newUpvotes--;
-              newDownvotes++;
-            }
-          } 
-          else {
-            newUserVote = voteType;
-            if (voteType === 'up') newUpvotes++;
-            if (voteType === 'down') newDownvotes++;
-          }
-
-          return {
-            ...post,
-            upvotes: newUpvotes,
-            downvotes: newDownvotes,
-            userVote: newUserVote
-          };
-        }
-        return post;
+    try {
+      const type = voteType === 'up' ? 1 : -1;
+      const result = await reportApi.vote({
+        report_id: postId,
+        user_id: user.user_id,
+        vote_type: type
       });
-
-      return updated.sort((a, b) => {
-        const scoreA = a.upvotes - a.downvotes;
-        const scoreB = b.upvotes - b.downvotes;
-        return scoreB - scoreA;
-      });
-    });
+      
+      // Update local state with the new score returned by backend
+      setPosts(prevPosts => prevPosts.map(post => 
+        post.id === postId ? { ...post, upvotes: result.new_score, userVote: voteType } : post
+      ));
+    } catch (err) {
+      console.error('Voting error:', err);
+    }
   };
 
   const sortedPosts = [...posts].sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
@@ -307,10 +278,18 @@ export default function FeedPage() {
                 const score = post.upvotes - post.downvotes;
                 
                 return (
-                  <div id={`post-${post.id}`} key={post.id} className="glass-card flex transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_16px_rgba(79,70,229,0.15)] overflow-hidden">
+                  <div 
+                    id={`post-${post.id}`} 
+                    key={post.id} 
+                    onClick={() => navigate(`/report/${post.id}`)}
+                    className="glass-card flex transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_16px_rgba(79,70,229,0.15)] overflow-hidden cursor-pointer"
+                  >
                     
                       {/* Vertical Voting Bar */}
-                    <div className="w-14 bg-black/5 flex flex-col items-center pt-4 pb-2 px-1 border-r border-[var(--border-color)] shrink-0">
+                    <div 
+                      className="w-14 bg-black/5 flex flex-col items-center pt-4 pb-2 px-1 border-r border-[var(--border-color)] shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button 
                         onClick={() => handleVote(post.id, 'up')}
                         className={`p-1 rounded transition-colors group ${post.userVote === 'up' ? 'text-[#22C55E]' : 'text-[var(--text-secondary)] hover:text-[#22C55E] hover:bg-[#22C55E]/10'}`}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { Plus, Paperclip, ArrowRight, ShieldAlert, Image as ImageIcon, Droplets, Trash2, Zap, AlertTriangle, LogOut, Sun, Moon, Loader2 } from 'lucide-react';
-import AuthPage from './pages/AuthPage';
 import FeedPage from './pages/FeedPage';
+import AuthPage from './pages/AuthPage';
+import ReportPage from './pages/ReportPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import reportApi from './api/reports';
@@ -241,6 +242,7 @@ function App() {
         <Routes>
           <Route path="/" element={<FeedPage />} />
           <Route path="/auth" element={<AuthPage key={location.search} />} />
+          <Route path="/report/:id" element={<ReportPage />} />
           <Route path="/report" element={
             <ProtectedRoute>
               <ReportIssue />
