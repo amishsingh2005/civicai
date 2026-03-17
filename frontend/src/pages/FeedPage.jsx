@@ -5,7 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import reportApi from '../api/reports';
+import mockComplaints from '../data/complaints.json';
 import 'leaflet/dist/leaflet.css';
+
 
 // Fix for default leaflet icons not showing correctly sometimes in React
 delete L.Icon.Default.prototype._getIconUrl;   
@@ -64,23 +66,51 @@ export default function FeedPage() {
 
     try {
       const data = await reportApi.getFeed();
-      // Map backend data to frontend model
-      const formattedPosts = data.map(report => ({
+      
+      // Backend mapping
+      const backendPosts = data.map(report => ({
         id: report._id,
-        author: 'Resident',
-        ticketId: `#CIV-${report._id.slice(-5).toUpperCase()}`,
+        author: 'Reported by Citizen',
+        ticketId: report._id.toString().length > 10 ? `#CIV-${report._id.slice(-5).toUpperCase()}` : `#CIV-${report._id}`,
         timeAgo: new Date(report.created_at).toLocaleDateString(),
         title: report.issue_type,
         status: report.status,
-        location: `Lat: ${report.location.coordinates[1].toFixed(4)}, Lng: ${report.location.coordinates[0].toFixed(4)}`,
+        location: report.location_name || `Lat: ${report.location.coordinates[1].toFixed(4)}, Lng: ${report.location.coordinates[0].toFixed(4)}`,
         coordinates: [report.location.coordinates[1], report.location.coordinates[0]],
-        description: report.description,
+        description: report.description || `Reported ${report.issue_type} which requires attention.`,
         image: report.image_url.startsWith('http') ? report.image_url : `${BACKEND_URL}${report.image_url}`,
         upvotes: report.score || 0,
         downvotes: 0,
         userVote: null
       }));
-      setPosts(formattedPosts);
+
+      // Mock data mapping (from complaints.json)
+      const mockPosts = mockComplaints.map(report => ({
+        id: report.id,
+        author: 'Verified Issue',
+        ticketId: `#${report.id}`,
+        timeAgo: '2 days ago', // Default for mock
+        title: report.type,
+        status: report.status,
+        location: report.location,
+        coordinates: [report.latitude, report.longitude],
+        description: `Persistent ${report.type.toLowerCase()} reported at ${report.location}. This is a ${report.severity.toLowerCase()} severity issue currently marked as ${report.status.toLowerCase()}.`,
+        image: report.image,
+        upvotes: Math.floor(Math.random() * 50) + 20, // Give some fake traction
+        downvotes: 0,
+        userVote: null
+      }));
+
+      // Combine and filter duplicates if any (by ID)
+      const combined = [...backendPosts];
+      mockPosts.forEach(mp => {
+        if (!combined.some(bp => bp.id === mp.id)) {
+          combined.push(mp);
+        }
+      });
+
+      setPosts(combined);
+
     } catch (err) {
       setError('Failed to load feed. Please try again.');
       console.error(err);
