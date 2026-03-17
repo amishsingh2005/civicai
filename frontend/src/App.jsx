@@ -258,7 +258,9 @@ function App() {
       const data = await reportApi.getFeed();
       const mapped = data.map(r => ({
         id: r._id,
+        displayId: `CIV-${r._id.toString().slice(-5).toUpperCase()}`,
         type: r.issue_type,
+
         location: r.location_name || `Lat: ${r.location.coordinates[1].toFixed(2)}, Lng: ${r.location.coordinates[0].toFixed(2)}`,
         severity: r.severity,
         status: r.status,

@@ -87,8 +87,9 @@ const ComplaintTable = ({ complaints, onUpdateStatus }) => {
                       target="_blank" 
                       className="text-indigo-400 hover:text-indigo-300 font-bold decoration-indigo-400/30 underline-offset-4 hover:underline"
                     >
-                      {item.id}
+                      {item.displayId || item.id}
                     </Link>
+
                   </div>
                 </td>
 

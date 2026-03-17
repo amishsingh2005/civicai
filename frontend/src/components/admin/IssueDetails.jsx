@@ -66,7 +66,8 @@ const IssueDetails = ({ complaints }) => {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1">Issue Reference</h3>
-                <h2 className="text-2xl font-black text-white">{issue.id}</h2>
+                <h2 className="text-2xl font-black text-white">{issue.displayId || issue.id}</h2>
+
               </div>
               <StatusBadge status={issue.status} />
             </div>
