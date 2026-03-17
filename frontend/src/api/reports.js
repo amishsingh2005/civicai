@@ -24,6 +24,14 @@ const reportApi = {
       throw error.response?.data?.detail || 'Failed to create report';
     }
   },
+  getFeed: async (params = {}) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/feed`, { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.detail || 'Failed to fetch feed';
+    }
+  },
 };
 
 export default reportApi;
