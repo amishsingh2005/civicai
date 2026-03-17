@@ -33,8 +33,14 @@ async def create_comment(comment: CommentCreate):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Supabase Error (POST): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_str = str(e)
+        print(f"Supabase Error (POST): {error_str}")
+        if "PGRST205" in error_str:
+            raise HTTPException(
+                status_code=500, 
+                detail="Supabase 'comments' table is missing. Please run the SQL setup script provided in the supabase_setup_guide.md artifact."
+            )
+        raise HTTPException(status_code=500, detail=error_str)
 
 @router.get("/{report_id}")
 async def get_comments(report_id: str):
@@ -52,5 +58,12 @@ async def get_comments(report_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Supabase Error (GET): {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_str = str(e)
+        print(f"Supabase Error (GET): {error_str}")
+        if "PGRST205" in error_str:
+            # For GET, we can just return an empty list or a 500 with a better message
+            raise HTTPException(
+                status_code=500, 
+                detail="Supabase 'comments' table is missing. Please run the SQL setup script provided in the supabase_setup_guide.md artifact."
+            )
+        raise HTTPException(status_code=500, detail=error_str)

@@ -8,7 +8,11 @@ const authApi = {
       const response = await axios.post(`${API_URL}/signup`, userData);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.detail || 'Signup failed';
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'Signup failed';
     }
   },
 
@@ -17,7 +21,11 @@ const authApi = {
       const response = await axios.post(`${API_URL}/login`, credentials);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.detail || 'Login failed';
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'Login failed';
     }
   },
 };

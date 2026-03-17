@@ -13,6 +13,8 @@ ENV/
 env/
 .env
 
+
 # Project specific
 backend/__pycache__/
 backend/routes/__pycache__/
+backend/uploads

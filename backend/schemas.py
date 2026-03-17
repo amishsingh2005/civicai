@@ -4,7 +4,7 @@ from typing import Optional
 class UserSignup(BaseModel):
     name: str
     email: EmailStr
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=3)
     role: str # "admin" or "public"
 
 class UserLogin(BaseModel):

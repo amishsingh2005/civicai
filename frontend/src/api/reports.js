@@ -21,7 +21,11 @@ const reportApi = {
       });
       return response.data;
     } catch (error) {
-      throw error.response?.data?.detail || 'Failed to create report';
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'API Error';
     }
   },
   getFeed: async (params = {}) => {
@@ -29,7 +33,11 @@ const reportApi = {
       const response = await axios.get(`${API_BASE_URL}/feed`, { params });
       return response.data;
     } catch (error) {
-      throw error.response?.data?.detail || 'Failed to fetch feed';
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'Failed to fetch feed';
     }
   },
   vote: async (voteData) => {
@@ -37,7 +45,11 @@ const reportApi = {
       const response = await axios.post(`${API_BASE_URL}/vote`, voteData);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.detail || 'Failed to vote';
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'Failed to vote';
     }
   },
 
@@ -46,7 +58,11 @@ const reportApi = {
       const response = await axios.get(`${API_BASE_URL}/${id}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data?.detail || 'Failed to fetch report details';
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'Failed to fetch report details';
     }
   },
 };
