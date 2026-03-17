@@ -76,14 +76,22 @@ const ComplaintTable = ({ complaints, onUpdateStatus }) => {
             {filteredComplaints.map((item) => (
               <tr key={item.id} className="hover:bg-slate-800/30 transition-colors group">
                 <td className="px-6 py-4">
-                  <Link 
-                    to={`/admin/issue/${item.id}`} 
-                    target="_blank" 
-                    className="text-indigo-400 hover:text-indigo-300 font-bold decoration-indigo-400/30 underline-offset-4 hover:underline"
-                  >
-                    {item.id}
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    {item.image && (
+                      <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-800 shrink-0 shadow-sm">
+                        <img src={item.image} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <Link 
+                      to={`/admin/issue/${item.id}`} 
+                      target="_blank" 
+                      className="text-indigo-400 hover:text-indigo-300 font-bold decoration-indigo-400/30 underline-offset-4 hover:underline"
+                    >
+                      {item.id}
+                    </Link>
+                  </div>
                 </td>
+
                 <td className="px-6 py-4 text-sm font-medium text-slate-200">{item.type}</td>
                 <td className="px-6 py-4 text-sm text-slate-400 max-w-[180px] truncate" title={item.location}>
                   {item.location}

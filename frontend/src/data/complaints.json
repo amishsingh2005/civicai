@@ -7,7 +7,8 @@
     "status": "Open",
     "progress": 20,
     "latitude": 12.9716,
-    "longitude": 77.5946
+    "longitude": 77.5946,
+    "image": "/src/assets/complaints/CIV-12345.png"
   },
   {
     "id": "CIV-12346",
@@ -17,7 +18,8 @@
     "status": "In Progress",
     "progress": 55,
     "latitude": 12.9816,
-    "longitude": 77.6046
+    "longitude": 77.6046,
+    "image": "/src/assets/complaints/CIV-12346.png"
   },
   {
     "id": "CIV-12347",
@@ -27,7 +29,8 @@
     "status": "Open",
     "progress": 10,
     "latitude": 12.9116,
-    "longitude": 77.6446
+    "longitude": 77.6446,
+    "image": "/src/assets/complaints/CIV-12347.png"
   },
   {
     "id": "CIV-12348",
@@ -37,7 +40,8 @@
     "status": "Resolved",
     "progress": 100,
     "latitude": 12.9716,
-    "longitude": 77.6446
+    "longitude": 77.6446,
+    "image": "/src/assets/complaints/CIV-12348.png"
   },
   {
     "id": "CIV-12349",
@@ -47,7 +51,8 @@
     "status": "Closed",
     "progress": 100,
     "latitude": 12.9816,
-    "longitude": 77.7446
+    "longitude": 77.7446,
+    "image": "/src/assets/complaints/CIV-12349.png"
   },
   {
     "id": "CIV-12350",
@@ -57,6 +62,7 @@
     "status": "Open",
     "progress": 15,
     "latitude": 12.9316,
-    "longitude": 77.6246
+    "longitude": 77.6246,
+    "image": "/src/assets/complaints/CIV-12350.png"
   }
 ]
