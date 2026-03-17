@@ -80,6 +80,7 @@ const Comments = ({ reportId, theme }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { user } = useAuth();
 
   const isDark = theme === 'dark';
@@ -88,14 +89,18 @@ const Comments = ({ reportId, theme }) => {
     try {
       const data = await commentApi.getComments(reportId);
       setComments(data);
+      setError(null);
     } catch (err) {
       console.error(err);
+      setError(err.toString());
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetchComments();
   }, [reportId]);
 
@@ -128,6 +133,13 @@ const Comments = ({ reportId, theme }) => {
 
       {/* Nested Comments List */}
       <div className="flex flex-col gap-4 mb-10">
+        {error && (
+          <div className={`p-6 rounded-2xl border ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50'}`}>
+            <p className="text-xs font-bold uppercase tracking-widest mb-2 opacity-60">System Notification</p>
+            <p className="text-sm leading-relaxed">{error}</p>
+          </div>
+        )}
+        
         {loading ? (
           <div className="text-center py-4 text-slate-500 text-sm">Loading discussion...</div>
         ) : comments.length === 0 ? (
