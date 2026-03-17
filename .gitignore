@@ -1,0 +1,18 @@
+# Environment variables
+backend/.env
+
+# Python bytecodes
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Project specific
+backend/__pycache__/
+backend/routes/__pycache__/
