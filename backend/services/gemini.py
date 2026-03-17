@@ -33,10 +33,14 @@ async def analyze_image(image_path: str):
         
         # Prompt for analysis
         prompt = """
-        Analyze this image and identify the civic issue (e.g., pothole, garbage, water leak, broken street light, etc.).
+        Analyze this civic issue image and return:
+        1. Issue type (pothole, garbage, water leak, etc.)
+        2. A clear 2-3 sentence human-like description that is natural, specific, and impactful.
+        3. Severity (Low, Medium, or High)
+        
         Provide the following in a clear format:
-        Issue Type: [Single category name]
-        Description: [1-2 sentences summarizing the issue]
+        Issue Type: [Category name]
+        Description: [2-3 sentences]
         Severity: [Low, Medium, or High]
         """
 
