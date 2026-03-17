@@ -176,3 +176,27 @@ async def get_report(report_id: str):
         return report
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class StatusUpdate(BaseModel):
+    status: str
+
+@router.patch("/{report_id}/status")
+async def update_report_status(report_id: str, update: StatusUpdate):
+    try:
+        valid_statuses = ["Open", "In Progress", "Resolved", "Closed"]
+        if update.status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_statuses}")
+            
+        result = await reports_collection.update_one(
+            {"_id": ObjectId(report_id)},
+            {"$set": {"status": update.status, "last_updated": datetime.utcnow()}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Report not found")
+            
+        return {"message": "Status updated", "status": update.status}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

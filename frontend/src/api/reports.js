@@ -65,6 +65,20 @@ const reportApi = {
       throw message || 'Failed to fetch report details';
     }
   },
+
+  updateStatus: async (id, status) => {
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.detail;
+      if (Array.isArray(message)) {
+        throw message.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      }
+      throw message || 'Failed to update status';
+    }
+  }
 };
+
 
 export default reportApi;

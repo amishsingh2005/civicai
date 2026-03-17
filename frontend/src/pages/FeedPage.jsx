@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import reportApi from '../api/reports';
-import mockComplaints from '../data/complaints.json';
 import 'leaflet/dist/leaflet.css';
+
 
 
 // Fix for default leaflet icons not showing correctly sometimes in React
@@ -84,34 +84,9 @@ export default function FeedPage() {
         userVote: null
       }));
 
-      // Mock data mapping (from complaints.json)
-      const mockPosts = mockComplaints.map(report => ({
-        id: report.id,
-        author: 'Verified Issue',
-        ticketId: `#${report.id}`,
-        timeAgo: '2 days ago', // Default for mock
-        title: report.type,
-        status: report.status,
-        location: report.location,
-        coordinates: [report.latitude, report.longitude],
-        description: `Persistent ${report.type.toLowerCase()} reported at ${report.location}. This is a ${report.severity.toLowerCase()} severity issue currently marked as ${report.status.toLowerCase()}.`,
-        image: report.image,
-        upvotes: Math.floor(Math.random() * 50) + 20, // Give some fake traction
-        downvotes: 0,
-        userVote: null
-      }));
-
-      // Combine and filter duplicates if any (by ID)
-      const combined = [...backendPosts];
-      mockPosts.forEach(mp => {
-        if (!combined.some(bp => bp.id === mp.id)) {
-          combined.push(mp);
-        }
-      });
-
-      setPosts(combined);
-
+      setPosts(backendPosts);
     } catch (err) {
+
       setError('Failed to load feed. Please try again.');
       console.error(err);
     } finally {

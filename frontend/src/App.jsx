@@ -11,8 +11,8 @@ import Sidebar from './components/admin/Sidebar';
 import Dashboard from './pages/admin/Dashboard';
 import Analytics from './pages/admin/Analytics';
 import IssueDetails from './components/admin/IssueDetails';
-import mockComplaints from './data/complaints.json';
 import { useEffect } from 'react';
+
 
 
 function ProtectedRoute({ children }) {
@@ -253,29 +253,49 @@ function App() {
   const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
 
-  useEffect(() => {
-    const savedData = localStorage.getItem('civicai_complaints');
-    if (savedData) {
-      setComplaints(JSON.parse(savedData));
-    } else {
-      setComplaints(mockComplaints);
+  const fetchComplaints = async () => {
+    try {
+      const data = await reportApi.getFeed();
+      const mapped = data.map(r => ({
+        id: r._id,
+        type: r.issue_type,
+        location: r.location_name || `Lat: ${r.location.coordinates[1].toFixed(2)}, Lng: ${r.location.coordinates[0].toFixed(2)}`,
+        severity: r.severity,
+        status: r.status,
+        progress: r.status === 'Resolved' || r.status === 'Closed' ? 100 : (r.status === 'In Progress' ? 50 : 10),
+        latitude: r.location.coordinates[1],
+        longitude: r.location.coordinates[0],
+        image: r.image_url.startsWith('http') ? r.image_url : `http://localhost:8000${r.image_url}`
+      }));
+      setComplaints(mapped);
+    } catch (err) {
+      console.error('Failed to fetch admin complaints:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchComplaints();
   }, []);
 
-  const updateComplaintStatus = (id, newStatus) => {
-    const updated = complaints.map(c => {
-      if (c.id === id) {
-        let progress = c.progress;
-        if (newStatus === 'Resolved' || newStatus === 'Closed') progress = 100;
-        if (newStatus === 'Open') progress = 0;
-        if (newStatus === 'In Progress' && progress === 100) progress = 50;
-        return { ...c, status: newStatus, progress };
-      }
-      return c;
-    });
-    setComplaints(updated);
-    localStorage.setItem('civicai_complaints', JSON.stringify(updated));
+  const updateComplaintStatus = async (id, newStatus) => {
+    try {
+      await reportApi.updateStatus(id, newStatus);
+      // Update local state for immediate feedback
+      setComplaints(prev => prev.map(c => {
+        if (c.id === id) {
+          let progress = c.progress;
+          if (newStatus === 'Resolved' || newStatus === 'Closed') progress = 100;
+          if (newStatus === 'Open') progress = 10;
+          if (newStatus === 'In Progress') progress = 50;
+          return { ...c, status: newStatus, progress };
+        }
+        return c;
+      }));
+    } catch (err) {
+      alert("Failed to update status on server.");
+    }
   };
+
 
   const isAdminPath = location.pathname.startsWith('/admin');
 
