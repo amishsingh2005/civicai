@@ -23,23 +23,28 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def upload_to_monarch(filename: str, file_bytes: bytes) -> str:
     upload_url = "https://api.monarchupload.cc/v3/upload"
     secret = os.getenv("MONARCH_SECRET", "RatUFrFSDWXg")
-    
-    print(f"Uploading file to Monarch: {filename}")
+    print(f"Uploading file to Monarch: {filename} (Secret Length: {len(secret) if secret else 0})")
+
 
     form_data = aiohttp.FormData()
     form_data.add_field('secret', secret)
-    form_data.add_field('file', file_bytes, filename=filename, content_type='multipart/form-data')
+    form_data.add_field('file', file_bytes, filename=filename) # Remove explicit multipart/form-data for the field
+
     
     async with aiohttp.ClientSession() as session:
         async with session.post(upload_url, data=form_data) as response:
+            print(f"Monarch Response Status: {response.status}")
+            result = await response.json()
+            print(f"Monarch Full Response: {result}")
+            
             if response.status != 200:
                 print(f"Monarch Upload Failed: {response.status}")
                 return None
             
-            result = await response.json()
             if "data" in result and "url" in result["data"]:
                 return result["data"]["url"]
             return None
+
 
 
 @router.post("/create")
@@ -50,8 +55,11 @@ async def create_report(
     description: str = Form(None),
     image: UploadFile = File(...)
 ):
+    print(f"\n>>> [CREATE REPORT] User: {user_id}, Loc: ({latitude}, {longitude})")
     try:
         # 1. Handle Image Upload (Temporarily for analysis)
+        print("Saving temp file...")
+
         file_ext = os.path.splitext(image.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_ext}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
@@ -96,23 +104,30 @@ async def create_report(
             }
 
         # 3. Process with Gemini
+        print("Calling Gemini analysis...")
         analysis = await analyze_image(file_path)
+        print(f"Gemini Result: {analysis}")
         
         # 4. Upload to Monarch
+        print("Uploading to Monarch...")
         monarch_url = await upload_to_monarch(image.filename, content)
+        print(f"Monarch URL: {monarch_url}")
         
         # 5. Clean up temp file
         if os.path.exists(file_path):
             os.remove(file_path)
 
         if not monarch_url:
+            print("ERROR: Monarch URL is empty")
             raise Exception("Failed to upload image to Monarch")
 
         # If user provided a manual description, we can append or prioritize it
         final_description = description if description else analysis["description"]
 
         # 6. Save to MongoDB
+        print(f"Creating DB Doc: Issue={analysis['issue_type']}, URL={monarch_url[:30]}...")
         report_doc = {
+
             "user_id": user_id,
             "image_url": monarch_url,
             "issue_type": analysis["issue_type"],
@@ -130,6 +145,7 @@ async def create_report(
         }
         
         result = await reports_collection.insert_one(report_doc)
+        print(f"Insertion successful: {result.inserted_id}")
         
         return {
             "report_id": str(result.inserted_id),
@@ -141,12 +157,18 @@ async def create_report(
         }
 
 
+
     except Exception as e:
-        print(f"Error creating report: {e}")
+        import traceback
+        print("-" * 50)
+        print(f"CRITICAL ERROR in create_report: {e}")
+        traceback.print_exc()
+        print("-" * 50)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Server error: {str(e)}"
         )
+
 
 @router.post("/vote")
 async def vote_report(vote: VoteRequest):
@@ -190,7 +212,8 @@ async def get_feed(report_status: str = None, issue_type: str = None):
         if issue_type:
             query["issue_type"] = issue_type
             
-        cursor = reports_collection.find(query).sort("created_at", -1)
+        cursor = reports_collection.find(query).sort("last_updated", -1)
+
         reports = []
         async for doc in cursor:
             doc["_id"] = str(doc["_id"])

@@ -59,6 +59,8 @@ function ReportIssue() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submit clicked. Image:", !!image);
+    
     if (!image) {
       setError('Please select or paste an image of the issue.');
       return;
@@ -68,36 +70,47 @@ function ReportIssue() {
     setError('');
     setSuccess(false);
 
-    // Get current location as fallback if EXIF fails on backend
-    // Or just provide it directly as requested by API logic
+    const geoOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    };
+
+    console.log("Requesting geolocation...");
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        console.log("Location received:", position.coords.latitude, position.coords.longitude);
         try {
           const reportData = {
-            user_id: user.user_id, // From backend login response
+            user_id: user?.user_id || "anonymous",
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             description: inputText,
             image: image
           };
 
+          console.log("Calling API...");
           const result = await reportApi.createReport(reportData);
-          console.log('Report created:', result);
+          console.log('Report result:', result);
           setSuccess(true);
           setInputText('');
           setImage(null);
         } catch (err) {
+          console.error("API Error:", err);
           setError(err.toString());
         } finally {
           setLoading(false);
         }
       },
       (err) => {
-        setError("Location access denied. Please enable location to report issues.");
+        console.error("Geolocation Error:", err);
+        setError(`Location error: ${err.message}. Please enable location permissions.`);
         setLoading(false);
-      }
+      },
+      geoOptions
     );
   };
+
 
   return (
     <div className="w-full flex-1 flex flex-col items-center justify-center pt-10 pb-20 px-4">

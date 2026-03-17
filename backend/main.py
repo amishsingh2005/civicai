@@ -24,6 +24,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def log_requests(request, call_next):
+    response = await call_next(request)
+    print(f"Request: {request.method} {request.url.path} - Status: {response.status_code}")
+    return response
+
+
 # Initialize DB on startup
 @app.on_event("startup")
 async def startup_event():
