@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { Plus, Paperclip, ArrowRight, ShieldAlert, Image as ImageIcon, Droplets, Trash2, Zap, AlertTriangle, LogOut, Sun, Moon } from 'lucide-react';
+import { Plus, Paperclip, ArrowRight, ShieldAlert, Image as ImageIcon, Droplets, Trash2, Zap, AlertTriangle, LogOut, Sun, Moon, Loader2 } from 'lucide-react';
 import AuthPage from './pages/AuthPage';
 import FeedPage from './pages/FeedPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import reportApi from './api/reports';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -16,6 +17,13 @@ function ProtectedRoute({ children }) {
 
 function ReportIssue() {
   const [inputText, setInputText] = useState('');
+  const [image, setImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  
+  const { user } = useAuth();
+  const fileInputRef = useState(null);
 
   const issueTypes = [
     { icon: <AlertTriangle size={14} className="text-amber-500" />, label: "Report a pothole" },
@@ -24,6 +32,54 @@ function ReportIssue() {
     { icon: <Zap size={14} className="text-yellow-500" />, label: "Streetlight not working" },
     { icon: <Droplets size={14} className="text-cyan-500" />, label: "Waterlogging issue" },
   ];
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setImage(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!image) {
+      setError('Please select or paste an image of the issue.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    // Get current location as fallback if EXIF fails on backend
+    // Or just provide it directly as requested by API logic
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const reportData = {
+            user_id: user.user_id, // From backend login response
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            description: inputText,
+            image: image
+          };
+
+          const result = await reportApi.createReport(reportData);
+          console.log('Report created:', result);
+          setSuccess(true);
+          setInputText('');
+          setImage(null);
+        } catch (err) {
+          setError(err.toString());
+        } finally {
+          setLoading(false);
+        }
+      },
+      (err) => {
+        setError("Location access denied. Please enable location to report issues.");
+        setLoading(false);
+      }
+    );
+  };
 
   return (
     <div className="w-full flex-1 flex flex-col items-center justify-center pt-10 pb-20 px-4">
@@ -34,39 +90,68 @@ function ReportIssue() {
       </div>
 
       {/* Main Headlines */}
-      <h2 className="text-[40px] font-bold text-white mb-4 tracking-tight">
+      <h2 className="text-[40px] font-bold text-[var(--text-primary)] mb-4 tracking-tight">
         Report a Civic Issue
       </h2>
       
-      <p className="text-[17px] text-[#9CA3AF] max-w-lg text-center mb-12 leading-relaxed">
-        Take a photo or paste an image — CiviqAI will extract the location from the image metadata, analyze it, and notify the right department.
+      <p className="text-[17px] text-[var(--text-secondary)] max-w-lg text-center mb-12 leading-relaxed">
+        Upload a photo — CiviqAI will analyze it using Gemini Vision, extract details, and notify the right department.
       </p>
 
-      {/* Input Area */}
-      <div className="w-full max-w-3xl search-input-container flex items-center px-6 py-4 mb-10">
-        <input 
-          type="text" 
-          placeholder="Describe the issue or paste an image (Ctrl+V)..."
-          className="search-input"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-        />
-        
-        <div className="flex items-center gap-3 ml-4">
-          <button className="text-[#9CA3AF] hover:text-white transition-colors p-2">
-            <Paperclip size={20} />
-          </button>
-          
-          <button className="submit-btn w-10 h-10 flex items-center justify-center shadow-md">
-             <ArrowRight size={20} />
-          </button>
+      {error && (
+        <div className="w-full max-w-3xl p-4 mb-6 text-sm font-bold text-center rounded-2xl bg-red-100/10 border border-red-500/20 text-red-500">
+          {error}
         </div>
-      </div>
+      )}
+
+      {success && (
+        <div className="w-full max-w-3xl p-4 mb-6 text-sm font-bold text-center rounded-2xl bg-green-100/10 border border-green-500/20 text-green-500">
+          Report submitted successfully! Gemini has analyzed the issue.
+        </div>
+      )}
+
+      {/* Input Area */}
+      <form onSubmit={handleSubmit} className="w-full max-w-3xl flex flex-col gap-4">
+        <div className="search-input-container flex items-center px-6 py-4">
+          <input 
+            type="text" 
+            placeholder="Describe the issue (optional)..."
+            className="search-input"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+          />
+          
+          <div className="flex items-center gap-3 ml-4">
+            <label className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-2 cursor-pointer">
+              <Paperclip size={20} />
+              <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+            </label>
+            
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="submit-btn w-10 h-10 flex items-center justify-center shadow-md disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="animate-spin text-white" size={20} /> : <ArrowRight size={20} />}
+            </button>
+          </div>
+        </div>
+        
+        {image && (
+          <div className="text-xs text-[var(--text-secondary)] px-6">
+            Selected file: <span className="font-bold">{image.name}</span>
+          </div>
+        )}
+      </form>
 
       {/* Suggestion Chips */}
-      <div className="flex flex-wrap justify-center gap-3 max-w-4xl">
+      <div className="flex flex-wrap justify-center gap-3 max-w-4xl mt-10">
         {issueTypes.map((issue, idx) => (
-          <button key={idx} className="issue-chip px-5 py-2.5 flex items-center gap-2">
+          <button 
+            key={idx} 
+            className="issue-chip px-5 py-2.5 flex items-center gap-2"
+            onClick={() => setInputText(issue.label)}
+          >
             {issue.icon}
             {issue.label}
           </button>

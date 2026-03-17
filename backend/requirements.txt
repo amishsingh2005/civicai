@@ -5,3 +5,5 @@ bcrypt
 python-jose
 python-dotenv
 email-validator
+google-generativeai
+python-multipart
