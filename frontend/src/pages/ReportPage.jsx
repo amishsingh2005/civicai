@@ -1,40 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, ArrowLeft, ArrowBigUp, ArrowBigDown, Clock, AlertCircle, Share2, MoreHorizontal, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { MapPin, ArrowLeft, ArrowBigUp, ArrowBigDown, Clock, AlertCircle, Share2, MoreHorizontal, ShieldCheck, CheckCircle2, User, Building2, Copy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import reportApi from '../api/reports';
 import Comments from '../components/Comments';
 
 const BACKEND_URL = 'http://localhost:8000';
 
-const StatusTracker = ({ currentStatus }) => {
+const VerticalStatusTracker = ({ currentStatus }) => {
   const steps = [
-    { label: 'Open', status: 'Open', icon: <AlertCircle size={16} /> },
-    { label: 'Verified', status: 'In Progress', icon: <ShieldCheck size={16} /> },
-    { label: 'Resolved', status: 'Resolved', icon: <CheckCircle2 size={16} /> }
+    { label: 'Reported', status: 'Open', desc: 'Issue has been reported.' },
+    { label: 'Verified', status: 'In Progress', desc: 'Authority has verified the issue.' },
+    { label: 'In Progress', status: 'Working', desc: 'Work is currently underway.' },
+    { label: 'Resolved', status: 'Resolved', desc: 'Issue has been successfully fixed.' }
   ];
 
-  const getStepIndex = (s) => steps.findIndex(step => step.status === s);
+  const getStepIndex = (s) => {
+    if (s === 'Open') return 0;
+    if (s === 'In Progress') return 1;
+    if (s === 'Resolved') return 3;
+    return 0;
+  };
+  
   const currentIndex = getStepIndex(currentStatus);
 
   return (
-    <div className="w-full py-6">
-      <div className="flex items-center justify-between relative">
-        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 -z-10"></div>
-        {steps.map((step, idx) => {
-          const isActive = idx <= currentIndex;
-          return (
-            <div key={idx} className="flex flex-col items-center gap-2 bg-[var(--bg-primary)] px-4">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${isActive ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-100 text-slate-400'}`}>
-                {step.icon}
-              </div>
-              <span className={`text-[11px] font-bold uppercase tracking-wider ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
-                {step.label}
-              </span>
+    <div className="flex flex-col gap-6 relative">
+      <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-slate-800"></div>
+      {steps.map((step, idx) => {
+        const isActive = idx <= currentIndex;
+        const isCurrent = idx === currentIndex;
+        
+        return (
+          <div key={idx} className="flex gap-4 items-start relative z-10">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-4 border-[#0B0F19] transition-all duration-500 ${isActive ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-slate-800 text-slate-500'}`}>
+              {idx === 0 ? <AlertCircle size={16} /> : 
+               idx === 1 ? <ShieldCheck size={16} /> : 
+               idx === 2 ? <Clock size={16} /> : <CheckCircle2 size={16} />}
             </div>
-          );
-        })}
-      </div>
+            <div className="flex flex-col pt-1">
+              <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-slate-500'}`}>{step.label}</span>
+              <span className="text-[11px] text-slate-400">{step.desc}</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -95,141 +105,158 @@ const ReportPage = () => {
     </div>
   );
 
+  const timeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + "h ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + "m ago";
+    return Math.floor(seconds) + " seconds ago";
+  };
+
   return (
-    <div className="w-full flex-1 flex justify-center py-6 px-4">
-      <div className="w-full max-w-4xl flex flex-col">
+    <div className="w-full flex-1 flex justify-center py-6 px-4 bg-[#0B0F19]">
+      <div className="w-full max-w-5xl flex flex-col">
+        
         {/* Back Button */}
         <button 
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-indigo-500 transition-colors mb-6 self-start group"
+          className="flex items-center gap-2 text-slate-400 hover:text-indigo-400 transition-colors mb-8 self-start group"
         >
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="font-bold text-sm">Back to Feed</span>
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+          <span className="font-bold text-xs uppercase tracking-widest">Feed</span>
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          
-          {/* Content Column */}
-          <div className="lg:col-span-8 flex flex-col">
-            <div className="glass-card overflow-hidden">
-              <div className="aspect-video w-full bg-slate-900 overflow-hidden relative">
-                <img 
-                  src={report.image_url.startsWith('http') ? report.image_url : `${BACKEND_URL}${report.image_url}`} 
-                  alt={report.issue_type}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-4 left-4">
-                   <div className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest backdrop-blur-md bg-black/40 text-white shadow-lg border border-white/20`}>
-                      {report.issue_type}
-                   </div>
-                </div>
-              </div>
-
-              <div className="p-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h1 className="text-3xl font-black text-[var(--text-primary)] tracking-tight mb-2">
-                       {report.issue_type}
-                    </h1>
-                    <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)] font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin size={14} className="text-rose-500" />
-                        <span>Lat: {report.location.coordinates[1].toFixed(4)}, Lng: {report.location.coordinates[0].toFixed(4)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={14} />
-                        <span>{new Date(report.created_at).toLocaleDateString(undefined, { dateStyle: 'long'})}</span>
-                      </div>
+        {/* Top Header Section */}
+        <div className="flex flex-col gap-4 mb-8">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                        <span className="text-[10px] font-black text-rose-500 uppercase tracking-tighter">{report.status}</span>
                     </div>
-                  </div>
-
-                  <div className="flex flex-col items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
-                    <button 
-                      onClick={() => handleVote('up')}
-                      className={`p-1 transition-colors ${userVote === 'up' ? 'text-green-500' : 'text-slate-400 hover:text-green-500'}`}
-                    >
-                      <ArrowBigUp size={30} className={userVote === 'up' ? 'fill-green-500' : ''} />
-                    </button>
-                    <span className="font-black text-lg text-slate-800">{report.score || 0}</span>
-                    <button 
-                      onClick={() => handleVote('down')}
-                      className={`p-1 transition-colors ${userVote === 'down' ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}
-                    >
-                      <ArrowBigDown size={30} className={userVote === 'down' ? 'fill-rose-500' : ''} />
-                    </button>
-                  </div>
+                    <span className="text-xs font-bold text-slate-500">#CIV-{report._id.slice(-5).toUpperCase()}</span>
                 </div>
-
-                <div className="mb-8">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] mb-3">Description</h3>
-                  <p className="text-[17px] leading-relaxed text-[var(--text-primary)] opacity-90">
-                    {report.description}
-                  </p>
-                </div>
-
-                <div className="mb-8 p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center justify-between">
-                   <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Severity Level</span>
-                      <span className={`text-sm font-bold ${report.severity === 'High' ? 'text-rose-600' : report.severity === 'Medium' ? 'text-amber-600' : 'text-green-600'}`}>
-                         {report.severity} Priority
-                      </span>
-                   </div>
-                   <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <AlertCircle size={20} className={report.severity === 'High' ? 'text-rose-500' : report.severity === 'Medium' ? 'text-amber-500' : 'text-green-500'} />
-                   </div>
-                </div>
-
-                <StatusTracker currentStatus={report.status} />
-
-                <div className="mt-8 flex items-center gap-4 border-t border-slate-100 pt-6">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full font-bold text-sm transition-colors">
-                    <Share2 size={16} />
-                    Share
-                  </button>
-                  <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors ml-auto">
-                    <MoreHorizontal size={20} />
-                  </button>
-                </div>
-              </div>
+                <span className="text-xs font-medium text-slate-500">{timeAgo(report.created_at)}</span>
             </div>
 
-            <Comments reportId={id} />
-          </div>
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                {report.issue_type}
+            </h1>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-            <div className="glass-card p-6">
-               <h3 className="text-sm font-black uppercase tracking-widest text-[var(--text-secondary)] mb-4">Location Data</h3>
-               <div className="w-full h-48 bg-slate-100 rounded-xl mb-4 overflow-hidden relative">
-                  {/* Static Map Placeholder or real Leaflet Map could go here */}
-                  <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-slate-400">
-                    <MapPin size={30} />
-                    <span className="text-xs font-bold">Map Visualization</span>
+            <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                        <User size={16} className="text-indigo-400" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-300">Citizen Info</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                    <MapPin size={16} className="text-rose-500" />
+                    <span className="text-sm font-medium">Mount Road, Chennai</span>
+                </div>
+            </div>
+        </div>
+
+        {/* Main Image */}
+        <div className="w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl mb-12">
+            <img 
+                src={report.image_url.startsWith('http') ? report.image_url : `${BACKEND_URL}${report.image_url}`} 
+                alt={report.issue_type}
+                className="w-full h-auto max-h-[600px] object-cover"
+            />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          
+          {/* Main Content Column */}
+          <div className="lg:col-span-8 flex flex-col gap-10">
+            
+            {/* Description */}
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-black text-white">Description</h2>
+              <p className="text-[17px] leading-relaxed text-slate-300 opacity-90">
+                {report.description || "No detailed description provided."}
+              </p>
+            </div>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="bg-[#151B28] p-6 rounded-2xl border border-white/5 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-rose-400">
+                     <AlertCircle size={18} />
+                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Severity Levels</span>
                   </div>
+                  <span className="text-lg font-bold text-white tracking-tight">{report.severity}</span>
                </div>
-               <div className="flex flex-col gap-3">
-                  <div className="flex justify-between text-xs">
-                     <span className="text-slate-400">Latitude</span>
-                     <span className="font-bold text-slate-700">{report.location.coordinates[1].toFixed(6)}</span>
+               <div className="bg-[#151B28] p-6 rounded-2xl border border-white/5 flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-indigo-400">
+                     <Building2 size={18} />
+                     <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Assigned Authority</span>
                   </div>
-                  <div className="flex justify-between text-xs">
-                     <span className="text-slate-400">Longitude</span>
-                     <span className="font-bold text-slate-700">{report.location.coordinates[0].toFixed(6)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                     <span className="text-slate-400">Nearby Reports</span>
-                     <span className="font-bold text-slate-700">+{report.report_count - 1} detections</span>
-                  </div>
+                  <span className="text-lg font-bold text-white tracking-tight">Chennai Corporation - Zone 9</span>
                </div>
             </div>
 
-            <div className="glass-card p-6 bg-gradient-to-br from-indigo-500 to-purple-600 border-none">
-                <h3 className="text-white font-black text-[15px] mb-2 leading-tight">Help resolve this issue faster!</h3>
-                <p className="text-white/80 text-xs mb-4 leading-relaxed">Sharing this report and upvoting helps it gain visibility from city officials.</p>
-                <button className="w-full py-2.5 bg-white text-indigo-600 rounded-xl font-bold text-sm shadow-xl hover:scale-[1.02] transition-transform">
-                   Boost Exposure
+            {/* Voting & Action Bar */}
+            <div className="flex items-center gap-4">
+                <div className="flex items-center bg-[#151B28] rounded-xl border border-white/5 p-1">
+                    <button 
+                        onClick={() => handleVote('up')}
+                        className={`p-2 rounded-lg transition-all ${userVote === 'up' ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <ArrowBigUp size={24} className={userVote === 'up' ? 'fill-indigo-400' : ''} />
+                    </button>
+                    <span className="px-4 font-black text-white text-lg">{report.score || 0}</span>
+                    <button 
+                        onClick={() => handleVote('down')}
+                        className={`p-2 rounded-lg transition-all ${userVote === 'down' ? 'bg-rose-500/20 text-rose-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                    >
+                        <ArrowBigDown size={24} className={userVote === 'down' ? 'fill-rose-400' : ''} />
+                    </button>
+                </div>
+
+                <button className="flex items-center gap-2 px-6 py-3 bg-[#151B28] hover:bg-white/5 text-slate-400 hover:text-white border border-white/5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all">
+                    <Copy size={16} />
+                    Mark Duplicate
                 </button>
             </div>
+
+            {/* Comments Section */}
+            <Comments reportId={id} theme="dark" />
+          </div>
+
+          {/* Sidebar Column */}
+          <div className="lg:col-span-4 flex flex-col gap-8">
+            
+            {/* Status Tracker */}
+            <div className="bg-[#151B28] p-8 rounded-3xl border border-white/5 flex flex-col gap-8">
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Status Tracker</h3>
+               <VerticalStatusTracker currentStatus={report.status} />
+            </div>
+
+            {/* Location Reference */}
+            <div className="bg-[#151B28] p-8 rounded-3xl border border-white/5 flex flex-col gap-6">
+               <div className="flex items-center gap-2 text-rose-500">
+                  <MapPin size={18} />
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Location Reference</h3>
+               </div>
+               <div className="w-full bg-[#0B0F19] p-6 rounded-2xl flex flex-col items-center gap-3 border border-white/5 shadow-inner">
+                  <div className="w-12 h-12 rounded-full bg-rose-500/10 flex items-center justify-center">
+                    <MapPin size={24} className="text-rose-500" />
+                  </div>
+                  <span className="text-sm font-black text-white">
+                    {report.location.coordinates[1].toFixed(3)}, {report.location.coordinates[0].toFixed(3)}
+                  </span>
+               </div>
+            </div>
+
           </div>
 
         </div>
